@@ -1,54 +1,51 @@
 """由层计算导数，仅支持链式"""
 import numpy as np
 
-class Linear:
-    """线性层，允许多批量"""
-    def __init__(self,input_length,output_length):
-        self.input_length = input_length
-        self.output_length = output_length
-        print("linear层init完成")
 
-    def init_param(self,wloc=1,wscale=1):
-        """loc：均值，scale：方差"""
-        self.weight = np.random.normal(size=[self.input_length,self.output_length],
-                                       loc=wloc,scale=wscale).astype(np.float32)
-        self.bias = np.random.normal(size=[self.output_length],
-                                     loc=0,scale=1).astype(np.float32)
-    
-    def forward(self,input):
-        assert len(input.shape) == 2
-        assert input.shape[1]==self.input_length
-        self.input = input
-        self.
-        
-class FullyConnectedLayer(object):
-    def __init__(self, num_input, num_output):  # 全连接层初始化
+class Linear:
+    """线性层，需要多批量:input_shape=(batch,input)"""
+    def __init__(self, num_input, num_output):
         self.num_input = num_input
         self.num_output = num_output
-        print('\tFully connected layer with input %d, output %d.' % (self.num_input, self.num_output))
-    def init_param(self, std=0.01):  # 参数初始化
-        self.weight = np.random.normal(loc=0.0, scale=std, size=(self.num_input, self.num_output))
-        self.bias = np.zeros([1, self.num_output])
-    def forward(self, input):  # 前向传播计算
-        start_time = time.time()
-        self.input = input
-        # TODO：全连接层的前向传播，计算输出结果
-        self.output = np.dot(self.input, self.weight)+self.bias
+        print("linear层init完成")
+    def init_param(self,loc=0,scale=0.1):
+        """loc：均值，scale：方差.
+            weight:shape=(1,inp,outp) bias:shape=(1,1,outp)
+        """
+        self.weight = np.random.normal(size=(1, self.num_input, self.num_output),
+                                       loc=loc,scale=scale).astype(np.float32)
+        self.bias = np.zeros(shape=(1,1,self.num_output),dtype=np.float32)
+   
+    def forward(self,input):
+        """input:shape=(batch,input_len)"""
+        assert len(input.shape) == 2
+        assert input.shape[1]==self.num_input
+        assert hasattr(self, 'weight')
+        self.input = input.reshape(input.shape[0],1,-1) #修改形状为(batch,1,input)
+        self.output = self.input @ self.weight + self.bias
         return self.output
-    def backward(self, top_diff):  # 反向传播的计算
-        # TODO：全连接层的反向传播，计算参数梯度和本层损失
-        self.d_weight = np.dot(top_diff, self.input.T)
+    def backward(self, top_diff):
+        assert top_diff.shape == self.output.shape
+        self.d_weight = np.dot(self.input.transpose(0,2,1), top_diff)
         self.d_bias = top_diff
-        bottom_diff = np.dot(top_diff, self.weight.T)
+        bottom_diff = np.dot(top_diff,self.weight.transpose(0,2,1))
         return bottom_diff
-    def update_param(self, lr):  # 参数更新
-        # TODO：对全连接层参数利用参数进行更新
-        self.weight = self.weight-lr*self.d_weight
-        self.bias = self.bias-lr*self.d_bias
-    def load_param(self, weight, bias):  # 参数加载
+    def update_param(self, lr):
+        self.weight = self.weight - lr * self.d_weight
+        self.bias = self.bias - lr * self.d_bias
+    
+    def load_param(self, weight, bias):
+        """参数加载"""
         assert self.weight.shape == weight.shape
         assert self.bias.shape == bias.shape
         self.weight = weight
         self.bias = bias
-    def save_param(self):  # 参数保存
+    def save_param(self):
+        """参数保存"""
         return self.weight, self.bias
+
+class ReLU():
+    pass
+
+class SoftmaxAndCrossEntropy():
+    pass
