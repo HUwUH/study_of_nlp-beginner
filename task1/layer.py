@@ -44,8 +44,33 @@ class Linear:
         """参数保存"""
         return self.weight, self.bias
 
-class ReLU():
-    pass
-
 class SoftmaxAndCrossEntropy():
-    pass
+    def __init__(self):
+        print('Softmax层init完成')
+    def forward(self, input):
+        """input:shape=(batch,1,input_len)
+            输出：softmax结束，格式(batch,1,input_len)
+            inputlen 应当对应几种类别
+        """
+        assert len(input.shape)==3 and input.shape[1]==1
+        input_max = np.max(input, axis=2, keepdims=True)
+        input_exp = np.exp(input - input_max)
+        self.prob = input_exp / np.sum(input_exp,axis=2,keepdims=True)
+        return self.prob
+    def get_loss(self, label):
+        """lable为整数数组（1维向量），或者onehot (batch,1,input_len)"""
+        self.batch_size = self.prob.shape[0]
+        if label.ndim == 1:
+            self.label_onehot = np.zeros_like(self.prob)
+            self.label_onehot[np.arange(self.batch_size), 0, label] = 1.0
+        elif label.shape == self.prob.shape:
+            self.label_onehot = label
+        else:
+            raise ValueError("形状错误")
+        self.label_onehot = np.zeros_like(self.prob)
+        self.label_onehot[np.arange(self.batch_size), 0, label] = 1.0
+        loss = -np.sum(np.log(self.prob + 1e-12) * self.label_onehot) / self.batch_size
+        return loss
+    def backward(self):
+        bottom_diff = (self.prob - self.label_onehot) / self.batch_size
+        return bottom_diff
