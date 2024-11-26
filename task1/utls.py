@@ -58,7 +58,8 @@ class Bag:
         
         return tensor
 
-class dataloader:
+#3
+class Dataloader:
     def __init__(self,batchsize:int ,vocab ,data ,mode='train'):
         """
         data:  sentence_id:any,id:any,sentence:str(,lable:int)
@@ -82,7 +83,7 @@ class dataloader:
         else:
             raise ValueError
 
-    def __len__(self):
+    def get_batch_nums(self):
         """batch长度"""
         return self.num_batchs
     
@@ -90,7 +91,7 @@ class dataloader:
         """
         只支持索引访问
         test: 一个tensor（batchsize*vocablen)
-        train: tensor（batchsize*vocablen), list长batchsize存类别的数字        
+        train: tensor（batchsize*vocablen), tensor(batchsize)存类别的数字        
         """
         if idx >= self.num_batchs or idx < 0:
             raise IndexError("Batch index out of range.")
@@ -103,7 +104,7 @@ class dataloader:
         if self.mode == 'test':
             return out_tensor
         elif self.mode == 'train':
-            out_label = self.labels[begidx:endidx]
+            out_label = np.array(self.labels[begidx:endidx],dtype=np.int32)
             return out_tensor, out_label
 
     
