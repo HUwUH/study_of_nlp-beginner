@@ -51,8 +51,8 @@ class Bag:
         
         #加入高频词
         most_common_words = word_counter.most_common(
-            self.vocab_maxsize if self.vocab_maxsize > 0 else None
-            )
+            self.vocab_maxsize-1 if self.vocab_maxsize > 0 else None
+            ) # -1因为已经有一个<unk>了
         for word, _ in most_common_words:
             if word not in self.word2num:
                 self.word2num[word] = len(self.word2num)
@@ -177,4 +177,4 @@ if __name__ == "__main__":
         sentences = [[1*i,2*i,3*i] for i in range(20)]
         ts,vs = shuffle_and_split(sentences,0.5)
         print(ts,vs)
-    # test_shuffle()
+    test_shuffle()
