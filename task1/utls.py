@@ -88,6 +88,88 @@ class Bag:
         return tensor
 
 
+class Ngram:
+    """和Bag基本差不多"""
+    def __init__(self, sentences, maxN:int, gram_vocab_maxsize:int=-1):
+        """
+        args:
+            sentences: list[str], 句子列表.
+            maxN: int, N-gram中支持的最大N(包含)
+            gram_vocab_maxsize: int。按从高到低频率最多存词语数量。-1不限大小。所有n
+                分别排序, vocab总大小为gram_vocab_maxsize*maxN。
+        others:
+            不再包含<unk>
+        """
+        assert isinstance(sentences,list) and isinstance(sentences[0],str)
+        assert gram_vocab_maxsize==-1 or gram_vocab_maxsize>0
+        assert maxN<10, "N-gram的N不建议太大。真想要这样操作的话，就删了这行就行。"
+        self.data = sentences
+        self.vocab_maxsize = gram_vocab_maxsize
+        self.word2num = {}
+        self.vocabsize = 0
+        self.maxN = maxN
+
+        #初始化词表
+        self.__init_vocab()
+
+    def __init_vocab(self)->None:
+        """初始化词表"""
+        for n in range(1,self.maxN+1):
+            word_counter = Counter()
+
+            #统计词频
+            for sentence in self.data:
+                words = sentence.lower().split()
+                nwords = self.__generate_ngrams(words, n)
+                word_counter.update(nwords)
+            
+            #加入高频词
+            most_common_words = word_counter.most_common(
+                self.vocab_maxsize if self.vocab_maxsize > 0 else None
+                )
+            for word, _ in most_common_words:
+                if word not in self.word2num:
+                    self.word2num[word] = len(self.word2num)
+
+        self.vocabsize = len(self.word2num)
+
+
+    def get_vocab_size(self)->int:
+        """词表长度"""
+        return self.vocabsize
+
+    def get_vocab(self)->dict:
+        """返回词表字典"""
+        return self.word2num
+
+    def trans_to_tensor(self,sentences):
+        """
+        将句子列表转换为张量表示
+        args:
+            sentences: list[str], 存句子的列表
+        return:
+            tensor: np.ndarray, shape=(batch_size, vocab_size)
+        """
+        assert isinstance(sentences, list)
+        batch_size = len(sentences)
+        tensor = np.zeros((batch_size,self.vocabsize),dtype=np.float32)
+
+        for i,sentence in enumerate(sentences):
+            words = sentence.lower().split()
+            for n in range(1, self.maxN + 1):
+                ngrams = self.__generate_ngrams(words, n)
+                for ngram in ngrams:
+                    idx = self.word2num.get(ngram, None)
+                    if idx is not None:
+                        tensor[i, idx] += 1
+
+        return tensor
+
+    def __generate_ngrams(self,words, n):
+        """生成词表的n长组合"""
+        return ['_'.join(words[i:i+n]) for i in range(len(words)-n+1)]
+
+
 class Dataloader:
 
     def __init__(self,batchsize:int,input,label=None,debug_info=None,input_transform=None,label_transform=None):
