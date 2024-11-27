@@ -1,7 +1,16 @@
 """
 我自己的代码的正确率仅仅为25%左右，并难以在训练集合收敛。
-因此，尝试结合reference中的BoW和我的模型融合，试试是不是我模型错了
-能训练到80%以上，应该不是我的模型的问题，而是我的BoW可能有问题
+因此，尝试结合reference中其他人写的的BoW和我的模型融合，试试是不是我模型错了
+能训练到80%以上，应该不是我的模型的问题，而是我的BoW可能有问题。
+我猜测，可能是我的BoW的词表长度太长导致的。
+
+    修改了我的BoW大小可改动，但是1.选取全部句子，准确率50%左右，2.只选取全句，不理想，
+准确率仅仅30%
+
+    发现了，他的data_split没有shuffle，也没有截取仅仅完整句子，相当于句子的数目不仅小
+了很多，而且整句的数量少了非常多，仅仅36句，且测试集和训练集有相同句子段。我的代码加上
+这种调整也能到67%以上！他的代码消除这种做法也是50%左右的准确率。
+    没有用他的代码测试“只训练、测试整句而不考虑句子片段”的情况
 """
 
 import numpy
@@ -81,6 +90,7 @@ bag=Bag(data,max_item)
 bag.get_words()
 bag.get_matrix()
 
+print(bag.len) #363
 
 class MyLinearModel:
     """耦合度较高，必须先forward，再getloss，再backward"""
@@ -112,7 +122,7 @@ class MyLinearModel:
 lr = 0.01
 model = MyLinearModel(bag.len,5,lr)
 
-epoch = 5000
+epoch = 3000
 for ep in range(epoch):
     input_tensor,lable = bag.train_matrix,bag.train_y
     lable = numpy.array(lable,dtype=numpy.int32)
@@ -132,7 +142,6 @@ for ep in range(epoch):
     #     print("accuracy：",right/ans.shape[0])
     if ep%100 == 0:
         input_tensor,lable = bag.test_matrix,bag.test_y
-        input_tensor,lable = bag.train_matrix,bag.train_y
         lable = numpy.array(lable,dtype=numpy.int32)
         soft_outp = model.forward(
             input_tensor.reshape(input_tensor.shape[0],1,-1))
